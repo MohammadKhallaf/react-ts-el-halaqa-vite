@@ -1,14 +1,20 @@
 import { FormControl } from '@mui/material'
+import Collapse from '@mui/material/Collapse'
 import InputLabel from '@mui/material/InputLabel'
+import List from '@mui/material/List'
+import ListItem from '@mui/material/ListItem'
+import ListItemButton from '@mui/material/ListItemButton'
+import ListItemText from '@mui/material/ListItemText'
 import MenuItem from '@mui/material/MenuItem'
 import Select from '@mui/material/Select'
 import axios from 'axios'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Fragment } from 'react'
 import { IJuzaMeta, IQuranMetaApi } from './app/api/types'
 
 function App() {
   const [response, setResponse] = useState<IQuranMetaApi['data']>()
   const [surahList, setSurahList] = useState<IJuzaMeta['surahs']>()
+  const [ayahList, setAyahList] = useState<IJuzaMeta['ayahs']>()
   const [juza, setJuza] = useState('')
   const [surah, setSurah] = useState('')
 
@@ -23,7 +29,10 @@ function App() {
     if (!juza) return
     axios
       .get(`http://api.alquran.cloud/v1/juz/${juza}/quran-uthmani`)
-      .then(({ data }) => setSurahList(data.data.surahs))
+      .then(({ data }) => {
+        setSurahList(data.data.surahs)
+        setAyahList(data.data.ayahs)
+      })
   }, [juza])
 
   return (
@@ -97,6 +106,36 @@ function App() {
           </Select>
         </FormControl>
       </div>
+
+      <List>
+        {surahList &&
+          Object.keys(surahList)?.map((num) => (
+            <Fragment key={num}>
+              <ListItem disablePadding>
+                <ListItemButton
+                  onClick={() => setSurah((prev) => (prev === num ? '' : num))}
+                >
+                  <ListItemText primary={surahList[num].englishName} />
+                </ListItemButton>
+              </ListItem>
+              <Collapse in={num === surah}>
+                <List>
+                  {ayahList
+                    ?.filter((item) => item.surah.number === +surah)
+                    .map((item) => (
+                      <ListItemButton key={item.page} dir='rtl'>
+                        <ListItemText
+                          sx={{ textAlign: 'start' }}
+                          dir='rtl'
+                          primary={item.numberInSurah + ' - ' + item.text}
+                        />
+                      </ListItemButton>
+                    ))}
+                </List>
+              </Collapse>
+            </Fragment>
+          ))}
+      </List>
     </div>
   )
 }
